@@ -1,0 +1,159 @@
+version: '3.1'
+services:
+    mysql:
+        image: mysql:8.0.11
+        # restart: always
+        volumes:
+            - ./mysql:/etc/mysql/conf.d
+            - ./data/mysql:/var/lib/mysql
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+    redis:
+        image: redis:5.0-rc4-alpine3.8
+        volumes:
+            - ./redis/redis.conf:/etc/redis/redis.conf
+            - ./data/redis:/data
+            - ./logs/redis:/var/log/redis
+        ports:
+            - "6379:6379"
+    rabbitmq:
+        image: rabbitmq:3.7.7-management-alpine
+        hostname: myrabbitmq
+        ports:
+            - "5672:5672" # mq
+            - "15672:15672" # admin
+    php:
+        build:
+            context: php
+            dockerfile: php.Dockerfile
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - ../:/var/www
+        # ports:
+        #     - "9502:80"
+        #     - "9503:8099"
+        tty: true
+    alphp:
+        build:
+            context: php
+            dockerfile: alphp.Dockerfile
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - ../:/var/www
+        tty: true
+    fpm:
+        build:
+            context: php
+            dockerfile: fpm.Dockerfile
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - ../:/var/www
+            - ./logs/fpm/:/var/log/php7
+        # depends_on:
+        #     - mysql
+        #     - redis
+    nginx:
+        image: nginx:1.15.3-alpine
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./nginx/conf:/etc/nginx/conf.d
+            - ../:/var/www
+            - ./logs/nginx/:/var/log/nginx
+        # depends_on:
+        #     - fpm
+        ports:
+           - "80:80"
+           - "443:443"
+    alpine:
+        # image: alpine:3.8
+        build:
+            context: linux
+            dockerfile: alpine.Dockerfile
+        volumes:
+            - ../:/var/www
+        environment:
+            TZ: Asia/Shanghai
+        tty: true
+    centos:
+        image: centos:7.5.1804
+        environment:
+            TZ: Asia/Shanghai # 使用 PRC 无效
+        volumes:
+            - ../:/var/www
+        tty: true
+    ubuntu:
+        build:
+            context: linux
+            dockerfile: ubuntu.Dockerfile
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - ../:/var/www
+        tty: true
+    elk: # https://elk-docker.readthedocs.io
+        image: sebp/elk:640
+        ports:
+            - "5601:5601" # kibana
+            - "9200:9200" # elasticsearch
+            - "5044:5044" # logstash
+    jenkins:
+        build:
+            context: devops
+            dockerfile: jenkins.Dockerfile
+        environment:
+            TZ: Asia/Shanghai
+        ports:
+            - "8080:8080"
+            - "50000:50000"
+        volumes:
+            - ./data/jenkins:/var/jenkins_home
+        tty: true
+    # docker run jenkins/jnlp-slave -url http://jenkins-server:port -workDir=/home/jenkins/agent <secret> <agent name>
+    jenkins-slave:
+        build:
+            context: devops
+            dockerfile: jenkins-slave.Dockerfile
+        environment:
+            TZ: Asia/Shanghai
+            JENKINS_URL: http://jenkins:8080
+            JENKINS_SECRET: secret
+            JENKINS_AGENT_NAME: aliyun-cly
+            # JENKINS_AGENT_WORKDIR: /Users/daydaygo/Desktop/www/docker/data/jenkins-slave
+        tty: true
+    node:
+        build: node
+        volumes:
+            - ../:/var/www
+    java:
+        build: java
+        volumes:
+            - ../:/var/www
+        tty: true
+    go:
+        build: go
+        environment:
+            TZ: Asia/Shanghai
+        volumes:
+            - ../:/var/www
+        tty: true
+    py3:
+        build:
+            context: python
+            dockerfile: py3.Dockerfile
+        volumes:
+            - ../:/var/www
+        tty: true
+    py2:
+        build:
+            context: python
+            dockerfile: py2.Dockerfile
+        volumes:
+            - ../:/var/www
+        tty: true

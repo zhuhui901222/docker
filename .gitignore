@@ -1,0 +1,5 @@
+data
+logs
+*.tgz
+*.tar.gz
+nginx/conf/ssl
